@@ -30,7 +30,7 @@ jobs:
           name: sonarcloud_summary
           path: sonarcloud_summary.xlsx
           
-sonarqube:
+  sonarqube:
     name: SonarQube
     runs-on: ubuntu-latest
     steps:

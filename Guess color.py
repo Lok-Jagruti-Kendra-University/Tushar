@@ -2,6 +2,7 @@
 import tkinter as tk
 import random
 
+
 # List of possible colors
 colors = ['Red', 'Blue', 'Green', 'Pink', 'Black', 'Yellow', 'Orange', 'Purple', 'Brown', 'White']
 

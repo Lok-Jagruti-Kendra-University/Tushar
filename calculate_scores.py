@@ -15,7 +15,7 @@ def fetch_sonarcloud_score():
     params = {
         "component": "Lok-Jagruti-Kendra-University_Tushar",  # Your SonarCloud project key
         "branch":"main",
-        "metricKeys": "coverage,ncloc, files,statements, vulnerabilities,bugs,code_smells, security_hotspots,duplicated_lines_density, cognitive_complexity,security_rating,sqale_rating, reliability_rating"
+        "metricKeys": "coverage, ncloc, files, statements, vulnerabilities, bugs, code_smells, security_hotspots, duplicated_lines_density, cognitive_complexity, security_rating, sqale_rating, reliability_rating"
     }
     response = requests.get(url, params=params)
     # Debugging output
@@ -60,7 +60,7 @@ def fetch_sonarcloud_score():
         
         ## Final Score Calculation
         final_score = bugs_score + vulnerabilities_score + code_smells_score + duplicated_lines_score  #coverage_score + 
-        scores["Final Score"] = final_score;
+        #scores["Final Score"] = final_score;
         
         return scores;
         

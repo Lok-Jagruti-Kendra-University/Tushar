@@ -7,6 +7,7 @@ GITHUB_ORG = "Lok-Jagruti-Kendra-University"
 GITHUB_TOKEN = "my-ljku-artifacts-token"
 HEADERS = {"Authorization": f"token {GITHUB_TOKEN}"}
 
+print(pd.__version__)
 
 def fetch_sonarcloud_score():
     """Fetch SonarCloud quality metrics."""
@@ -48,7 +49,6 @@ def fetch_sonarcloud_score():
         ## Metrics and Weights
         #- **Code Coverage**: 30%
         #  coverage_score = (coverage_percentage / 100) * 30
-        
         #- **Bugs**: 30%
         bugs_score = (1 - (bugs_count / total_files)) * 30
         #- **Vulnerabilities**: 30%

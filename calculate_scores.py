@@ -1,6 +1,11 @@
 import requests
+import os
 import pandas as pd
 from bs4 import BeautifulSoup
+
+GITHUB_ORG = "Lok-Jagruti-Kendra-University"
+GITHUB_TOKEN = "my-ljku-artifacts-token"
+HEADERS = {"Authorization": f"token {GITHUB_TOKEN}"}
 
 print(pd.__version__)
 
@@ -8,9 +13,9 @@ def fetch_sonarcloud_score():
     """Fetch SonarCloud quality metrics."""
     url = "https://sonarcloud.io/api/measures/component"
     params = {
-        "component": "Lok-Jagruti-Kendra-University_testai",  # Your SonarCloud project key
+        "component": "Lok-Jagruti-Kendra-University_PHPDemo",  # Your SonarCloud project key
         "branch":"main",
-        "metricKeys": "coverage,ncloc,vulnerabilities,bugs,code_smells, security_hotspots,duplicated_lines_density, cognitive_complexity,security_rating,sqale_rating, reliability_rating"
+        "metricKeys": "coverage,ncloc, files,statements, vulnerabilities,bugs,code_smells, security_hotspots,duplicated_lines_density, cognitive_complexity,security_rating,sqale_rating, reliability_rating"
     }
     response = requests.get(url, params=params)
     # Debugging output
@@ -27,11 +32,37 @@ def fetch_sonarcloud_score():
 
     # Extract metrics
     scores = {m["metric"]: m["value"] for m in measures}
-    return scores
+        
+    print(scores)
     
     if response.status_code == 200:
         data = response.json()
         measures = data.get("component", {}).get("measures", [])
+
+        # SonarCloud Evaluation Formula
+        code_smells_count = float(next((m["value"] for m in measures if m["metric"] == "code_smells"), 0))
+        bugs_count = float(next((m["value"] for m in measures if m["metric"] == "bugs"), 0))
+        vulnerabilities_count = float(next((m["value"] for m in measures if m["metric"] == "vulnerabilities"), 0))
+        duplicated_lines_percentage = float(next((m["value"] for m in measures if m["metric"] == "duplicated_lines_density"), 0))
+        total_files = float(next((m["value"] for m in measures if m["metric"] == "files"), 0))
+        
+        ## Metrics and Weights
+        #- **Code Coverage**: 30%
+        #  coverage_score = (coverage_percentage / 100) * 30
+        #- **Bugs**: 30%
+        bugs_score = (1 - (bugs_count / total_files)) * 30
+        #- **Vulnerabilities**: 30%
+        vulnerabilities_score = (1 - (vulnerabilities_count / total_files)) * 30
+        #- **Code Smells**: 25%
+        code_smells_score = (1 - (code_smells_count / total_files)) * 25
+        #- **Duplicated Lines**: 15%
+        duplicated_lines_score = (1 - (duplicated_lines_percentage / 100)) * 15
+        
+        ## Final Score Calculation
+        final_score = bugs_score + vulnerabilities_score + code_smells_score + duplicated_lines_score  #coverage_score + 
+        scores["Final Score"] = final_score;
+        
+        return scores;
         
         # Example: Extracting coverage score
         code_smells = next((m["value"] for m in measures if m["metric"] == "code_smells"), 0)
@@ -39,87 +70,8 @@ def fetch_sonarcloud_score():
     
     return 0  # Default to 0 if request fails
 
-def fetch_mlflow_score():
-    """Fetch an example MLflow metric (dummy API, replace with real MLflow API)."""
-    url = "http://mlflow-server.example.com/api/2.0/mlflow/metrics/get"
-    params = {
-        "run_id": "some-run-id",
-        "metric_key": "accuracy"
-    }
-    response = requests.get(url)
-    
-    if response.status_code == 200:
-        data = response.json()
-        return float(data.get("metric", {}).get("value", 0)) * 100  # Convert to percentage
-    return 0
-
-def fetch_deepsource_score():
-    """Fetch DeepSource score (Example API call, replace with actual API)."""
-    url = "https://deepsource.io/api/v1/some_project/issues/statistics"
-    headers = {"Authorization": "Token YOUR_DEEPSOURCE_API_KEY"}
-    response = requests.get(url, headers=headers)
-    
-    if response.status_code == 200:
-        data = response.json()
-        return 100 - int(data.get("issue_count", 0))  # Assuming fewer issues = better score
-    return 0
-
-def aggregate_scores():
-    """Aggregate scores from all sources."""
-    #sonar_score = fetch_sonarcloud_score()
-    mlflow_score = 30 #fetch_mlflow_score()
-    deepsource_score = 30 #fetch_deepsource_score()
-    return sonar_score
-    overall_score = (sonar_score + mlflow_score + deepsource_score) / 3
-    return {
-        "SonarCloud": sonar_score,
-        "MLflow": mlflow_score,
-        "DeepSource": deepsource_score,
-        "Overall Score": round(overall_score, 2)
-    }
-
-
 # SonarCloud Summary Page URL
-SONARCLOUD_URL = "https://sonarcloud.io/summary/overall?id=Lok-Jagruti-Kendra-University_testai&branch=main"
-
-def fetch_sonarcloud_summary():
-    """Fetch and extract SonarCloud summary data."""
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
-    }
-    response = requests.get(SONARCLOUD_URL, headers=headers)
-
-    if response.status_code != 200:
-        print("Failed to fetch data from SonarCloud")
-        return None
-
-    # Parse HTML content
-    soup = BeautifulSoup(response.text, "html.parser")
-    #print(soup.prettify())  # Prints the full HTML of the page
-    
-    # Extract metrics (example: Bugs, Code Smells, Vulnerabilities)
-    metrics = {}
-    
-    # Example: Extracting bugs count (Modify selectors based on SonarCloud changes)
-    #bugs_element = soup.find("div", class_="metric-label", text="Bugs")
-    bugs_element = soup.find("div", class_="metric-label", string="Bugs")
-    if bugs_element:
-        bugs_value = bugs_element.find_next_sibling("div").text.strip()
-        metrics["Bugs"] = bugs_value
-
-    # Example: Extracting Code Smells
-    code_smells_element = soup.find("div", class_="metric-label", string="Code Smells")
-    if code_smells_element:
-        code_smells_value = code_smells_element.find_next_sibling("div").text.strip()
-        metrics["Code Smells"] = code_smells_value
-
-    # Example: Extracting Vulnerabilities
-    vulnerabilities_element = soup.find("div", class_="metric-label", string="Vulnerabilities")
-    if vulnerabilities_element:
-        vulnerabilities_value = vulnerabilities_element.find_next_sibling("div").text.strip()
-        metrics["Vulnerabilities"] = vulnerabilities_value
-
-    return metrics
+SONARCLOUD_URL = "https://sonarcloud.io/summary/overall?id=Lok-Jagruti-Kendra-University_PHPDemo&branch=main"
 
 def save_to_excel(data):
     if not data:
@@ -128,6 +80,32 @@ def save_to_excel(data):
     df = pd.DataFrame([data])
     df.to_excel("sonarcloud_summary.xlsx", index=False)
     print("Saved to sonarcloud_summary.xlsx")
+
+def get_repositories():
+    url = f"https://api.github.com/orgs/{GITHUB_ORG}/repos"
+    response = requests.get(url, headers=HEADERS)
+    return [repo["name"] for repo in response.json()]
+
+def get_latest_workflow_run(repo):
+    url = f"https://api.github.com/repos/{GITHUB_ORG}/{repo}/actions/runs"
+    response = requests.get(url, headers=HEADERS)
+    runs = response.json().get("workflow_runs", [])
+    return runs[0]["id"] if runs else None
+
+def download_artifact(repo, run_id):
+    url = f"https://api.github.com/repos/{GITHUB_ORG}/{repo}/actions/runs/{run_id}/artifacts"
+    response = requests.get(url, headers=HEADERS)
+    artifacts = response.json().get("artifacts", [])
+    
+    if artifacts:
+        artifact_url = artifacts[0]["archive_download_url"]
+        response = requests.get(artifact_url, headers=HEADERS)
+        
+        with open(f"artifacts/{repo}.zip", "wb") as file:
+            file.write(response.content)
+        print(f"Downloaded artifacts for {repo}")
+    else:
+        print(f"No artifacts found for {repo}")
 
 if __name__ == "__main__":
     #summary_data = fetch_sonarcloud_summary()
